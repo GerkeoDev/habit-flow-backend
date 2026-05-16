@@ -72,7 +72,11 @@ const login = async (req, res) => {
             let token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30m' })
             let refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' })
 
-            res.cookie('token', token, { httpOnly: true })
+            res.cookie('token', token, { 
+                httpOnly: true, 
+                secure: true,
+                sameSite: "none" 
+            })
 
             res.json({ user: payload, token, refreshToken })
         } else {
