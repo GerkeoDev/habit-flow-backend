@@ -33,7 +33,8 @@ const register = async (req, res) => {
         })
 
         let user = new User({
-            ...userData,
+            email: userData.email,
+            userName: userData.userName,
             password: hashedPassword
         })
         await user.save()
