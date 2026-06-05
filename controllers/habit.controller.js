@@ -11,7 +11,7 @@ const getAllHabits = (req, res) => {
                 return res.status(404).json({ message: 'No habits found' })
             } else {
                 const habitWithStats = allHabits.map(habit => {
-                    const stats = calculateStreak(habit.completedDates, habit.frequency, localDate)
+                    const stats = calculateStreak(habit.completedDates, /*habit.frequency,*/ localDate)
                     return {
                         ...habit._doc,
                         stats
@@ -30,7 +30,7 @@ const getOneHabit = (req, res) => {
             if (!oneHabit) {
                 return res.status(404).json({ message: 'Habit not found' })
             }
-            const stats = calculateStreak(oneHabit.completedDates, oneHabit.frequency, localDate)
+            const stats = calculateStreak(oneHabit.completedDates, /*oneHabit.frequency,*/ localDate)
             res.json({ ...oneHabit.toObject(), stats })
         })
         .catch(err => {
@@ -39,15 +39,15 @@ const getOneHabit = (req, res) => {
 }
 
 const createHabit = (req, res) => {
-    const { title, frequency } = req.body
-    const { localDate } = req.body
+    const { title/*, frequency*/ } = req.body
+    const { localDate } = req.query
     Habit.create({
         userId: req.user.id,
         title,
-        frequency
+        // frequency
     })
         .then(newHabit => {
-            const stats = calculateStreak(newHabit.completedDates, newHabit.frequency, localDate)
+            const stats = calculateStreak(newHabit.completedDates, /*newHabit.frequency,*/ localDate)
             res.json({ ...newHabit.toObject(), stats })
         })
         .catch(err => res.status(400).json(err))
@@ -55,17 +55,17 @@ const createHabit = (req, res) => {
 
 const updateHabit = (req, res) => {
     const { id } = req.params
-    const { localDate } = req.body
+    const { localDate } = req.query
     Habit.findOneAndUpdate(
         { _id: id, userId: req.user.id },
-        req.body,
+        { title: req.body.title },
         { returnDocument: 'after', runValidators: true }
     )
         .then(updatedHabit => {
             if (!updatedHabit) {
                 return res.status(404).json({ message: 'Habit not found' })
             }
-            const stats = calculateStreak(updatedHabit.completedDates, updatedHabit.frequency, localDate)
+            const stats = calculateStreak(updatedHabit.completedDates, /*updatedHabit.frequency,*/ localDate)
             res.json({ ...updatedHabit.toObject(), stats })
         })
         .catch(err => res.status(400).json(err))
@@ -108,7 +108,7 @@ const checkHabit = async (req, res) => {
         
         await habit.save()
 
-        const stats = calculateStreak(habit.completedDates, habit.frequency, localDate)
+        const stats = calculateStreak(habit.completedDates, /*habit.frequency,*/ localDate)
 
         res.json({...habit.toObject(), stats: stats})
 

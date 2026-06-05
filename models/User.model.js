@@ -14,7 +14,14 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: [true, 'The user needs a password'],
         minlength: [8, 'The password must be at least 8 characters long']
+    },
+    settings: {
+        type: Object,
+        default: {
+            theme: 'light'
+        }
     }
+
 }, {timestamps: true})
 
 module.exports.User = mongoose.model('User', UserSchema)
