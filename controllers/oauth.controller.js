@@ -6,6 +6,17 @@ const mongoose = require('mongoose')
 
 const JWT_SECRET = process.env.JWT_SECRET
 
+const setAuthCookies = (res, token, refreshToken) => {
+    const isProduction = !process.env.CLIENT_URL?.includes('localhost')
+    const cookieOptions = {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax'
+    }
+    res.cookie('token', token, cookieOptions)
+    res.cookie('refreshToken', refreshToken, cookieOptions)
+}
+
 const register = async (req, res) => {
     let userData = req.body
     try {
@@ -106,11 +117,7 @@ const login = async (req, res) => {
             let token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30m' })
             let refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' })
 
-            res.cookie('token', token, { 
-                httpOnly: true, 
-                secure: true,
-                sameSite: "none" 
-            })
+            setAuthCookies(res, token, refreshToken)
 
             res.json({ user: payload, token, refreshToken })
         } else {
@@ -141,23 +148,25 @@ const login = async (req, res) => {
 }
 
 const refresh = (req, res) => {
-    let data = req.body
+    let refreshToken = req.body.refreshToken || req.cookies.refreshToken
 
-    if (!data.refreshToken) {
+    if (!refreshToken) {
         return res.json({ error: 'No refresh token provided' })
     }
 
     try {
-        let payload = jwt.verify(data.refreshToken, JWT_SECRET)
+        let payload = jwt.verify(refreshToken, JWT_SECRET)
         payload = {
             id: payload.id,
             userName: payload.userName
         }
 
         let token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30m' })
-        let refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' })
+        let newRefreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' })
 
-        res.json({ token, refreshToken })
+        setAuthCookies(res, token, newRefreshToken)
+
+        res.json({ token, refreshToken: newRefreshToken })
     } catch (error) {
         return res.json({ error: error.toString() })
     }
@@ -166,6 +175,7 @@ const refresh = (req, res) => {
 const logout = async (req, res) => {
     try {
         res.clearCookie('token')
+        res.clearCookie('refreshToken')
         res.status(200)
         res.json({ message: 'Logout successful' })
     } catch (error) {
@@ -175,10 +185,34 @@ const logout = async (req, res) => {
 }
 
 const me = (req, res) => {
+    const tryRefresh = () => {
+        const refreshToken = req.cookies.refreshToken
+        if (!refreshToken) {
+            return res.status(401).json({ error: 'Unauthorized' })
+        }
+        try {
+            let payload = jwt.verify(refreshToken, JWT_SECRET)
+            payload = { id: payload.id, userName: payload.userName }
+            const newToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '30m' })
+            const newRefreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' })
+            setAuthCookies(res, newToken, newRefreshToken)
+            return res.json(payload)
+        } catch {
+            return res.status(401).json({ error: 'Unauthorized' })
+        }
+    }
+
     try {
         const token = req.cookies.token
-        const payload = jwt.verify(token, JWT_SECRET)
-        res.json(payload)
+        if (!token) {
+            return tryRefresh()
+        }
+        try {
+            const payload = jwt.verify(token, JWT_SECRET)
+            return res.json(payload)
+        } catch {
+            return tryRefresh()
+        }
     } catch {
         res.status(401)
         res.json({ error: 'Unauthorized' })
