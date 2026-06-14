@@ -6,15 +6,20 @@ const mongoose = require('mongoose')
 
 const JWT_SECRET = process.env.JWT_SECRET
 
-const setAuthCookies = (res, token, refreshToken) => {
+const getCookieOptions = () => {
     const isProduction = !process.env.CLIENT_URL?.includes('localhost')
-    const cookieOptions = {
+    return {
         httpOnly: true,
         secure: isProduction,
-        sameSite: isProduction ? 'none' : 'lax'
+        sameSite: isProduction ? 'none' : 'lax',
+        path: '/'
     }
-    res.cookie('token', token, cookieOptions)
-    res.cookie('refreshToken', refreshToken, cookieOptions)
+}
+
+const setAuthCookies = (res, token, refreshToken) => {
+    const opts = getCookieOptions()
+    res.cookie('token', token, opts)
+    res.cookie('refreshToken', refreshToken, opts)
 }
 
 const register = async (req, res) => {
@@ -174,8 +179,9 @@ const refresh = (req, res) => {
 
 const logout = async (req, res) => {
     try {
-        res.clearCookie('token')
-        res.clearCookie('refreshToken')
+        const opts = getCookieOptions()
+        res.clearCookie('token', opts)
+        res.clearCookie('refreshToken', opts)
         res.status(200)
         res.json({ message: 'Logout successful' })
     } catch (error) {
