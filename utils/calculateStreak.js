@@ -1,6 +1,6 @@
 
 
-const calculateStreak = (completedDates, /*frequency,*/ localDate) => {
+const calculateStreak = (completedDates, frequency, localDate) => {
     if (!completedDates.length) {
         return {
             currentStreak: 0,
@@ -10,8 +10,7 @@ const calculateStreak = (completedDates, /*frequency,*/ localDate) => {
         }
     }
     completedDates.sort((a, b) => new Date(b) - new Date(a))
-    // const step = frequency === 'daily' ? 1 : 7
-    const step = 1
+    const step = frequency === 'weekly' ? 7 : 1
 
     const diffInDays = (a, b) => {
         const d1 = new Date(a)
