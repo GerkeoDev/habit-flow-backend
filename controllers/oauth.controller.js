@@ -111,7 +111,7 @@ const login = async (req, res) => {
             })
         }
 
-        let samePassword = await bcrypt.compareSync(data.password, user.password)
+        let samePassword = await bcrypt.compare(data.password, user.password)
 
         if (samePassword) {
             const payload = {

@@ -9,7 +9,7 @@ const HabitSchema = new mongoose.Schema({
     title: {
         type: String,
         required: [true, 'The habit needs a title'],
-        minlenght: [3, 'The title must be at least 3 characters long']
+        minlength: [3, 'The title must be at least 3 characters long']
     },
     frequency: {
         type: String,
@@ -19,10 +19,6 @@ const HabitSchema = new mongoose.Schema({
     completedDates: {
         type: [String],
         default: []
-    },
-    createdAt: {
-        type: [Date],
-        default: Date.now
     }
 }, {timestamps: true})
 
